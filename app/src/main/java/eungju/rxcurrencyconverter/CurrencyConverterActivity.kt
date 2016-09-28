@@ -20,12 +20,6 @@ class CurrencyConverterActivity : AppCompatActivity() {
         CurrencyApplication.get(this).component().inject(this)
 
         subscriptions = CompositeSubscription()
-        //input
-        subscriptions.add(RxSwipeRefreshLayout.refreshes(refresh).subscribe(presenter.refresh))
-        subscriptions.add(from.currencyUpdate().subscribe(presenter.fromCurrencyUpdate))
-        subscriptions.add(from.amountUpdate().subscribe(presenter.fromAmountUpdate))
-        subscriptions.add(to.currencyUpdate().subscribe(presenter.toCurrencyUpdate))
-        subscriptions.add(to.amountUpdate().subscribe(presenter.toAmountUpdate))
         //output
         subscriptions.add(presenter.refreshing
                 .observeOn(AndroidSchedulers.mainThread())
@@ -46,6 +40,12 @@ class CurrencyConverterActivity : AppCompatActivity() {
                 .subscribe { to.setCurrency(it) })
         subscriptions.add(presenter.toAmount
                 .subscribe { to.setAmount(it) })
+        //input
+        subscriptions.add(RxSwipeRefreshLayout.refreshes(refresh).subscribe(presenter.refresh))
+        subscriptions.add(from.currencyUpdate().subscribe(presenter.fromCurrencyUpdate))
+        subscriptions.add(from.amountUpdate().subscribe(presenter.fromAmountUpdate))
+        subscriptions.add(to.currencyUpdate().subscribe(presenter.toCurrencyUpdate))
+        subscriptions.add(to.amountUpdate().subscribe(presenter.toAmountUpdate))
     }
 
     override fun onDestroy() {

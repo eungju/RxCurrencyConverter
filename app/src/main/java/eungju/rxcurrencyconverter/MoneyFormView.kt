@@ -32,18 +32,13 @@ class MoneyFormView(context: Context, attrs: AttributeSet?) : FrameLayout(contex
         super.onAttachedToWindow()
         subscriptions = CompositeSubscription()
         if (!isInEditMode) {
-            //input
-            subscriptions.add(RxAdapterView.itemSelections(currency).skip(1)
-                    .subscribe(presenter.currencySelect))
-            subscriptions.add(Observable.merge((0..11).map { keys.getChildAt(it) }.map { v -> RxView.clicks(v).map { v.tag as String } })
-                    .subscribe(presenter.keyPress))
             //output
             subscriptions.add(presenter.currencies
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe {
                         currency.adapter = ArrayAdapter<String>(context, R.layout.view_currency_item, it.map { it.currencyCode })
                     })
-            subscriptions.add(presenter.currencyIndex
+            subscriptions.add(presenter.currencySetIndex
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe { currency.setSelection(it) })
             subscriptions.add(Observable
@@ -57,6 +52,12 @@ class MoneyFormView(context: Context, attrs: AttributeSet?) : FrameLayout(contex
                     })
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(RxTextView.text(amount)))
+            //input
+            subscriptions.add(RxAdapterView.itemSelections(currency)
+                    .skip(1)
+                    .subscribe(presenter.currencySelect))
+            subscriptions.add(Observable.merge((0..11).map { keys.getChildAt(it) }.map { v -> RxView.clicks(v).map { v.tag as String } })
+                    .subscribe(presenter.keyPress))
         }
     }
 

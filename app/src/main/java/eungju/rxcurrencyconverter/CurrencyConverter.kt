@@ -25,8 +25,9 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
     private val currencyRates: Observable<CurrencyRates> = fromCurrency.distinctUntilChanged()
             .mergeWith(refresh.withLatestFrom(fromCurrency, { refresh, fromCurrency -> fromCurrency }))
             .doOnNext { refreshing.call(true) }
-            .concatMap {
-                fixer.latest(it.currencyCode)
+            .concatMap { fromCurrency ->
+                fixer.latest(fromCurrency.currencyCode)
+                        .map { it.copy(rates = it.rates + Pair(fromCurrency.currencyCode, 1.0))}
                         .doOnError { refreshing.call(false) }
                         .onErrorResumeNext(Observable.empty())
             }
@@ -34,21 +35,13 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
             .share()
     val date: Observable<String> = currencyRates.map { it.date }
     val currencies: Observable<List<Currency>> = currencyRates
-            .map { (it.rates.keys + it.base).sorted().map { Currency.getInstance(it) } }
+            .map { it.rates.keys.sorted().map { Currency.getInstance(it) } }
     val fromAmount: Observable<BigDecimal> = Observable.merge(fromAmountSet, fromAmountUpdate)
             .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(fromCurrency, toCurrency, currencyRates, { amount, from, to, rates ->
-                if (rates.base == to.currencyCode) {
-                    amount
-                } else {
-                    amount.divide(BigDecimal(rates.rates[to.currencyCode]!!), from.defaultFractionDigits, RoundingMode.FLOOR)
-                }
+                amount.divide(BigDecimal(rates.rates[to.currencyCode]!!), from.defaultFractionDigits, RoundingMode.FLOOR)
             }))
     val toAmount: Observable<BigDecimal> = Observable.merge(toAmountSet, toAmountUpdate)
             .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), fromCurrency, toCurrency, currencyRates, { amount, from, to, rates ->
-                if (rates.base == to.currencyCode) {
-                    amount
-                } else {
-                    amount.multiply(BigDecimal(rates.rates[to.currencyCode]!!)).setScale(to.defaultFractionDigits, RoundingMode.FLOOR)
-                }
+                amount.multiply(BigDecimal(rates.rates[to.currencyCode]!!)).setScale(to.defaultFractionDigits, RoundingMode.FLOOR)
             }))
 }

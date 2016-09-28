@@ -16,10 +16,9 @@ class MoneyForm {
     val currency: Observable<Currency> = currencySet
             .mergeWith(Observable.combineLatest(currencySelect, currencies, { select, currencies -> currencies[select] }))
             .cacheWithInitialCapacity(1)
-    val currencyIndex: Observable<Int> = currencySelect
-            .mergeWith(Observable.combineLatest(currencySet, currencies, { currency, currencies ->
+    val currencySetIndex: Observable<Int> = Observable.combineLatest(currencySet, currencies, { currency, currencies ->
                 currencies.indexOf(currency)
-            }))
+            })
             .cacheWithInitialCapacity(1)
     val amount: Observable<BigDecimal> = amountSet.map { amount -> { current: BigDecimal -> amount } }
             .mergeWith(keyPress.map { keyPress ->
@@ -37,7 +36,7 @@ class MoneyForm {
             .scan(BigDecimal.ZERO, { current, f -> f(current) })
             .skip(1)
             .cacheWithInitialCapacity(1)
-    val currencyUpdate: Observable<Currency> = currencySelect.distinctUntilChanged()
+    val currencyUpdate: Observable<Currency> = currencySelect
             .withLatestFrom(currency, { currencySelect, currency -> currency })
     val amountUpdate: Observable<BigDecimal> = keyPress
             .withLatestFrom(amount, { keyPress, amount -> amount })
