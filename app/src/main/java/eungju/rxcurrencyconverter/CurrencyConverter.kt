@@ -4,7 +4,7 @@ import com.jakewharton.rxrelay2.BehaviorRelay
 import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
-import io.reactivex.functions.Function4
+import io.reactivex.functions.Function3
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.Currency
@@ -24,9 +24,7 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
 
     val fromCurrency: Observable<Currency> = Observable.merge(fromCurrencySet, fromCurrencyUpdate)
     val toCurrency: Observable<Currency> = Observable.merge(toCurrencySet, toCurrencyUpdate)
-    private val currencyRates: Observable<CurrencyRates> = fromCurrency.distinctUntilChanged()
-            .mergeWith(refresh.withLatestFrom(fromCurrency, BiFunction { refresh, fromCurrency -> fromCurrency }))
-            .doOnNext { refreshing.accept(true) }
+    private val currencyExchange: Observable<CurrencyExchange> = fromCurrency.distinctUntilChanged()
             .concatMap { fromCurrency ->
                 fixer.latest(fromCurrency.currencyCode)
                         .map { it.copy(rates = it.rates + Pair(fromCurrency.currencyCode, 1.0))}
@@ -35,15 +33,23 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
             }
             .doOnNext { refreshing.accept(false) }
             .share()
-    val date: Observable<String> = currencyRates.map { it.date }
-    val currencies: Observable<List<Currency>> = currencyRates
+    val date: Observable<String> = currencyExchange.map { it.date }
+    val currencies: Observable<List<Currency>> = currencyExchange
             .map { it.rates.keys.sorted().map { Currency.getInstance(it) } }
     val fromAmount: Observable<BigDecimal> = Observable.merge(fromAmountSet, fromAmountUpdate)
-            .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(fromCurrency, toCurrency, currencyRates, Function4 { amount, from, to, rates ->
-                amount.divide(BigDecimal(rates.rates[to.currencyCode] as Double), from.defaultFractionDigits, RoundingMode.FLOOR)
+            .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(currencyExchange.withLatestFrom(fromCurrency, BiFunction<CurrencyExchange, Currency, Pair<Currency, CurrencyExchange>> { a, b -> Pair(b, a) }), toCurrency, Function3 { amount, fromAndExchange, to ->
+                val (from, exchange) = fromAndExchange
+                if (from.currencyCode != exchange.base) {
+                    throw IllegalStateException(String.format("FROM: %s != %s", from.currencyCode, exchange.base))
+                }
+                amount.divide(BigDecimal(exchange.rates[to.currencyCode] as Double), from.defaultFractionDigits, RoundingMode.FLOOR)
             }))
     val toAmount: Observable<BigDecimal> = Observable.merge(toAmountSet, toAmountUpdate)
-            .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), fromCurrency, toCurrency, currencyRates, Function4 { amount, from, to, rates ->
-                amount.multiply(BigDecimal(rates.rates[to.currencyCode] as Double)).setScale(to.defaultFractionDigits, RoundingMode.FLOOR)
+            .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), currencyExchange.withLatestFrom(fromCurrency, BiFunction<CurrencyExchange, Currency, Pair<Currency, CurrencyExchange>> { a, b -> Pair(b, a) }), toCurrency, Function3 { amount, fromAndExchange, to ->
+                val (from, exchange) = fromAndExchange
+                if (from.currencyCode != exchange.base) {
+                    throw IllegalStateException(String.format("TO: %s != %s", from.currencyCode, exchange.base))
+                }
+                amount.multiply(BigDecimal(exchange.rates[to.currencyCode] as Double)).setScale(to.defaultFractionDigits, RoundingMode.FLOOR)
             }))
 }

@@ -6,5 +6,5 @@ import retrofit2.http.Query
 
 interface Fixer {
     @GET("latest")
-    fun latest(@Query("base") base: String? = null): Observable<CurrencyRates>
+    fun latest(@Query("base") base: String? = null): Observable<CurrencyExchange>
 }
