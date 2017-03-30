@@ -2,16 +2,16 @@ package eungju.rxcurrencyconverter
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import com.jakewharton.rxbinding.support.v4.widget.RxSwipeRefreshLayout
-import com.jakewharton.rxbinding.widget.RxTextView
+import com.jakewharton.rxbinding2.support.v4.widget.RxSwipeRefreshLayout
+import com.jakewharton.rxbinding2.widget.RxTextView
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_currency_converter.*
-import rx.android.schedulers.AndroidSchedulers
-import rx.subscriptions.CompositeSubscription
 import javax.inject.Inject
 
 class CurrencyConverterActivity : AppCompatActivity() {
     @Inject lateinit var presenter: CurrencyConverter
-    private lateinit var subscriptions: CompositeSubscription
+    private lateinit var subscriptions: CompositeDisposable
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,7 +19,7 @@ class CurrencyConverterActivity : AppCompatActivity() {
 
         CurrencyApplication.get(this).component().inject(this)
 
-        subscriptions = CompositeSubscription()
+        subscriptions = CompositeDisposable()
         //output
         subscriptions.add(presenter.refreshing
                 .observeOn(AndroidSchedulers.mainThread())
@@ -41,7 +41,7 @@ class CurrencyConverterActivity : AppCompatActivity() {
         subscriptions.add(presenter.toAmount
                 .subscribe { to.setAmount(it) })
         //input
-        subscriptions.add(RxSwipeRefreshLayout.refreshes(refresh).subscribe(presenter.refresh))
+        subscriptions.add(RxSwipeRefreshLayout.refreshes(refresh).map { Unit }.subscribe(presenter.refresh))
         subscriptions.add(from.currencyUpdate().subscribe(presenter.fromCurrencyUpdate))
         subscriptions.add(from.amountUpdate().subscribe(presenter.fromAmountUpdate))
         subscriptions.add(to.currencyUpdate().subscribe(presenter.toCurrencyUpdate))
@@ -49,7 +49,7 @@ class CurrencyConverterActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        subscriptions.unsubscribe()
+        subscriptions.dispose()
         super.onDestroy()
     }
 }

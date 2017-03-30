@@ -5,16 +5,17 @@ import android.util.AttributeSet
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.FrameLayout
-import com.jakewharton.rxbinding.view.RxView
-import com.jakewharton.rxbinding.widget.RxAdapterView
-import com.jakewharton.rxbinding.widget.RxTextView
+import com.jakewharton.rxbinding2.view.RxView
+import com.jakewharton.rxbinding2.widget.RxAdapterView
+import com.jakewharton.rxbinding2.widget.RxTextView
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.BiFunction
 import kotlinx.android.synthetic.main.view_money_form.view.*
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import rx.subscriptions.CompositeSubscription
 import java.math.BigDecimal
 import java.text.DecimalFormat
-import java.util.*
+import java.util.Currency
 
 class MoneyFormView(context: Context, attrs: AttributeSet?) : FrameLayout(context, attrs) {
     private lateinit var presenter: MoneyForm
@@ -26,11 +27,11 @@ class MoneyFormView(context: Context, attrs: AttributeSet?) : FrameLayout(contex
         }
     }
 
-    private lateinit var subscriptions: CompositeSubscription
+    private lateinit var subscriptions: CompositeDisposable
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        subscriptions = CompositeSubscription()
+        subscriptions = CompositeDisposable()
         if (!isInEditMode) {
             //output
             subscriptions.add(presenter.currencies
@@ -42,7 +43,7 @@ class MoneyFormView(context: Context, attrs: AttributeSet?) : FrameLayout(contex
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe { currency.setSelection(it) })
             subscriptions.add(Observable
-                    .combineLatest(presenter.amount, presenter.currency, { amount, currency ->
+                    .combineLatest<BigDecimal, Currency, String>(presenter.amount, presenter.currency, BiFunction { amount, currency ->
                         val format = DecimalFormat()
                         format.currency = currency
                         format.groupingSize = 3
@@ -62,20 +63,20 @@ class MoneyFormView(context: Context, attrs: AttributeSet?) : FrameLayout(contex
     }
 
     override fun onDetachedFromWindow() {
-        subscriptions.unsubscribe()
+        subscriptions.dispose()
         super.onDetachedFromWindow()
     }
 
     fun setCurrencies(currencies: List<Currency>) {
-        presenter.currencies.call(currencies)
+        presenter.currencies.accept(currencies)
     }
 
     fun setCurrency(currency: Currency) {
-        presenter.currencySet.call(currency)
+        presenter.currencySet.accept(currency)
     }
 
     fun setAmount(amount: BigDecimal) {
-        presenter.amountSet.call(amount)
+        presenter.amountSet.accept(amount)
     }
 
     fun currency(): Observable<Currency> = presenter.currency

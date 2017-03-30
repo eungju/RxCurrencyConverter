@@ -1,21 +1,23 @@
 package eungju.rxcurrencyconverter
 
-import com.jakewharton.rxrelay.BehaviorRelay
-import com.jakewharton.rxrelay.PublishRelay
-import rx.Observable
+import com.jakewharton.rxrelay2.BehaviorRelay
+import com.jakewharton.rxrelay2.PublishRelay
+import io.reactivex.Observable
+import io.reactivex.functions.BiFunction
+import io.reactivex.functions.Function4
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.util.*
+import java.util.Currency
 import javax.inject.Inject
 
 class CurrencyConverter @Inject constructor(fixer: Fixer) {
-    val refresh: PublishRelay<Void> = PublishRelay.create()
-    val refreshing: BehaviorRelay<Boolean> = BehaviorRelay.create(false)
-    val fromCurrencySet: BehaviorRelay<Currency> = BehaviorRelay.create(Currency.getInstance("USD"))
+    val refresh: PublishRelay<Unit> = PublishRelay.create()
+    val refreshing: BehaviorRelay<Boolean> = BehaviorRelay.createDefault(false)
+    val fromCurrencySet: BehaviorRelay<Currency> = BehaviorRelay.createDefault(Currency.getInstance("USD"))
     val fromCurrencyUpdate: PublishRelay<Currency> = PublishRelay.create()
-    val fromAmountSet: BehaviorRelay<BigDecimal> = BehaviorRelay.create(BigDecimal.ONE)
+    val fromAmountSet: BehaviorRelay<BigDecimal> = BehaviorRelay.createDefault(BigDecimal.ONE)
     val fromAmountUpdate: PublishRelay<BigDecimal> = PublishRelay.create()
-    val toCurrencySet: BehaviorRelay<Currency> = BehaviorRelay.create(Currency.getInstance("KRW"))
+    val toCurrencySet: BehaviorRelay<Currency> = BehaviorRelay.createDefault(Currency.getInstance("KRW"))
     val toCurrencyUpdate: PublishRelay<Currency> = PublishRelay.create()
     val toAmountSet: BehaviorRelay<BigDecimal> = BehaviorRelay.create()
     val toAmountUpdate: PublishRelay<BigDecimal> = PublishRelay.create()
@@ -23,25 +25,25 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
     val fromCurrency: Observable<Currency> = Observable.merge(fromCurrencySet, fromCurrencyUpdate)
     val toCurrency: Observable<Currency> = Observable.merge(toCurrencySet, toCurrencyUpdate)
     private val currencyRates: Observable<CurrencyRates> = fromCurrency.distinctUntilChanged()
-            .mergeWith(refresh.withLatestFrom(fromCurrency, { refresh, fromCurrency -> fromCurrency }))
-            .doOnNext { refreshing.call(true) }
+            .mergeWith(refresh.withLatestFrom(fromCurrency, BiFunction { refresh, fromCurrency -> fromCurrency }))
+            .doOnNext { refreshing.accept(true) }
             .concatMap { fromCurrency ->
                 fixer.latest(fromCurrency.currencyCode)
                         .map { it.copy(rates = it.rates + Pair(fromCurrency.currencyCode, 1.0))}
-                        .doOnError { refreshing.call(false) }
+                        .doOnError { refreshing.accept(false) }
                         .onErrorResumeNext(Observable.empty())
             }
-            .doOnNext { refreshing.call(false) }
+            .doOnNext { refreshing.accept(false) }
             .share()
     val date: Observable<String> = currencyRates.map { it.date }
     val currencies: Observable<List<Currency>> = currencyRates
             .map { it.rates.keys.sorted().map { Currency.getInstance(it) } }
     val fromAmount: Observable<BigDecimal> = Observable.merge(fromAmountSet, fromAmountUpdate)
-            .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(fromCurrency, toCurrency, currencyRates, { amount, from, to, rates ->
-                amount.divide(BigDecimal(rates.rates[to.currencyCode]!!), from.defaultFractionDigits, RoundingMode.FLOOR)
+            .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(fromCurrency, toCurrency, currencyRates, Function4 { amount, from, to, rates ->
+                amount.divide(BigDecimal(rates.rates[to.currencyCode] as Double), from.defaultFractionDigits, RoundingMode.FLOOR)
             }))
     val toAmount: Observable<BigDecimal> = Observable.merge(toAmountSet, toAmountUpdate)
-            .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), fromCurrency, toCurrency, currencyRates, { amount, from, to, rates ->
-                amount.multiply(BigDecimal(rates.rates[to.currencyCode]!!)).setScale(to.defaultFractionDigits, RoundingMode.FLOOR)
+            .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), fromCurrency, toCurrency, currencyRates, Function4 { amount, from, to, rates ->
+                amount.multiply(BigDecimal(rates.rates[to.currencyCode] as Double)).setScale(to.defaultFractionDigits, RoundingMode.FLOOR)
             }))
 }
