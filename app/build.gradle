@@ -4,8 +4,8 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    compileSdkVersion 27
+    buildToolsVersion '27.0.1'
     defaultConfig {
         applicationId "eungju.rxcurrencyconverter"
         minSdkVersion 15
@@ -27,7 +27,7 @@ dependencies {
     compile "com.android.support:appcompat-v7:$support_version"
     compile "com.android.support:gridlayout-v7:$support_version"
     compile "io.reactivex.rxjava2:rxandroid:2.0.1"
-    compile "io.reactivex.rxjava2:rxjava:2.0.8"
+    compile "io.reactivex.rxjava2:rxjava:2.1.7"
     compile "com.jakewharton.rxrelay2:rxrelay:2.0.0"
     compile "com.jakewharton.rxbinding2:rxbinding:$rxbinding_version"
     compile "com.jakewharton.rxbinding2:rxbinding-support-v4:$rxbinding_version"
@@ -35,17 +35,10 @@ dependencies {
     compile "com.squareup.retrofit2:converter-gson:$retrofit2_version"
     compile "com.squareup.retrofit2:adapter-rxjava2:$retrofit2_version"
     compile "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
-    compile "com.jakewharton.timber:timber:4.3.1"
+    compile "com.jakewharton.timber:timber:4.6.0"
 
     compile "com.google.dagger:dagger:$dagger_version"
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
 
     testCompile 'junit:junit:4.12'
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-}
-
-repositories {
-    mavenCentral()
 }

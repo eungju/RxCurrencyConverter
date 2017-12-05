@@ -37,7 +37,7 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
     val currencies: Observable<List<Currency>> = currencyExchange
             .map { it.rates.keys.sorted().map { Currency.getInstance(it) } }
     val fromAmount: Observable<BigDecimal> = Observable.merge(fromAmountSet, fromAmountUpdate)
-            .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(currencyExchange.withLatestFrom(fromCurrency, BiFunction<CurrencyExchange, Currency, Pair<Currency, CurrencyExchange>> { a, b -> Pair(b, a) }), toCurrency, Function3 { amount, fromAndExchange, to ->
+            .mergeWith(Observable.merge(toAmountSet, toAmountUpdate).withLatestFrom(currencyExchange.withLatestFrom(fromCurrency, BiFunction { a: CurrencyExchange, b: Currency -> Pair(b, a) }), toCurrency, Function3 { amount, fromAndExchange, to ->
                 val (from, exchange) = fromAndExchange
                 if (from.currencyCode != exchange.base) {
                     throw IllegalStateException(String.format("FROM: %s != %s", from.currencyCode, exchange.base))
@@ -45,7 +45,7 @@ class CurrencyConverter @Inject constructor(fixer: Fixer) {
                 amount.divide(BigDecimal(exchange.rates[to.currencyCode] as Double), from.defaultFractionDigits, RoundingMode.FLOOR)
             }))
     val toAmount: Observable<BigDecimal> = Observable.merge(toAmountSet, toAmountUpdate)
-            .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), currencyExchange.withLatestFrom(fromCurrency, BiFunction<CurrencyExchange, Currency, Pair<Currency, CurrencyExchange>> { a, b -> Pair(b, a) }), toCurrency, Function3 { amount, fromAndExchange, to ->
+            .mergeWith(Observable.combineLatest(Observable.merge(fromAmountSet, fromAmountUpdate), currencyExchange.withLatestFrom(fromCurrency, BiFunction { a: CurrencyExchange, b: Currency -> Pair(b, a) }), toCurrency, Function3 { amount, fromAndExchange, to ->
                 val (from, exchange) = fromAndExchange
                 if (from.currencyCode != exchange.base) {
                     throw IllegalStateException(String.format("TO: %s != %s", from.currencyCode, exchange.base))
