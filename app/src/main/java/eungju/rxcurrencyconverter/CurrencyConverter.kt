@@ -2,6 +2,7 @@ package eungju.rxcurrencyconverter
 
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.jakewharton.rxrelay2.PublishRelay
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Function3
@@ -27,22 +28,24 @@ class CurrencyConverter @Inject constructor(freeApi: FreeApi) {
     private val exchangeRate: Observable<ExchangeRate> = Observable.combineLatest(fromCurrency.distinctUntilChanged(), toCurrency.distinctUntilChanged(), BiFunction {
         from: Currency, to: Currency -> Pair(from, to)
     })
-            .concatMap { (from, to) ->
+            .concatMapMaybe { (from, to) ->
                 freeApi.convert(from.currencyCode + "_" + to.currencyCode)
                         .map { it.results.values.first().let { ExchangeRate(Currency.getInstance(it.fr), Currency.getInstance(it.to), it.`val`) } }
+                        .doOnSuccess { refreshing.accept(false) }
                         .doOnError { refreshing.accept(false) }
-                        .onErrorResumeNext(Observable.empty())
+                        .toMaybe()
+                        .onErrorResumeNext(Maybe.empty())
             }
-            .doOnNext { refreshing.accept(false) }
             .share()
     val currencies: Observable<List<Currency>> = Observable.just(Unit).mergeWith(refresh)
-            .concatMap { _ ->
+            .concatMapMaybe { _ ->
                 freeApi.currencies()
                         .map { it.results.keys.sorted().map(Currency::getInstance) }
+                        .doOnSuccess { refreshing.accept(false) }
                         .doOnError { refreshing.accept(false) }
-                        .onErrorResumeNext(Observable.empty())
+                        .toMaybe()
+                        .onErrorResumeNext(Maybe.empty())
             }
-            .doOnNext { refreshing.accept(false) }
             .share()
     private val fromAmountChange = Observable.merge(fromAmountSet, fromAmountUpdate)
     private val toAmountChange = Observable.merge(toAmountSet, toAmountUpdate)
