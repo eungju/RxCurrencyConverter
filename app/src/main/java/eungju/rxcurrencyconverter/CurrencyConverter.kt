@@ -11,7 +11,6 @@ import java.util.Currency
 import javax.inject.Inject
 
 class CurrencyConverter @Inject constructor(freeApi: FreeApi) {
-    val init: PublishRelay<Unit> = PublishRelay.create()
     val refresh: PublishRelay<Unit> = PublishRelay.create()
     val refreshing: BehaviorRelay<Boolean> = BehaviorRelay.createDefault(false)
     private val fromCurrencySet: BehaviorRelay<Currency> = BehaviorRelay.createDefault(Currency.getInstance("USD"))
@@ -36,7 +35,7 @@ class CurrencyConverter @Inject constructor(freeApi: FreeApi) {
             }
             .doOnNext { refreshing.accept(false) }
             .share()
-    val currencies: Observable<List<Currency>> = Observable.merge(init, refresh)
+    val currencies: Observable<List<Currency>> = Observable.just(Unit).mergeWith(refresh)
             .concatMap { _ ->
                 freeApi.currencies()
                         .map { it.results.keys.sorted().map(Currency::getInstance) }

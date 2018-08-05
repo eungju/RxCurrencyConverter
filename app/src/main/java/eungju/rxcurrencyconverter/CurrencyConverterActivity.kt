@@ -3,7 +3,6 @@ package eungju.rxcurrencyconverter
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.jakewharton.rxbinding2.support.v4.widget.RxSwipeRefreshLayout
-import com.jakewharton.rxbinding2.widget.RxTextView
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_currency_converter.*
@@ -43,8 +42,6 @@ class CurrencyConverterActivity : AppCompatActivity() {
         subscriptions.add(from.amountUpdate().subscribe(presenter.fromAmountUpdate))
         subscriptions.add(to.currencyUpdate().subscribe(presenter.toCurrencyUpdate))
         subscriptions.add(to.amountUpdate().subscribe(presenter.toAmountUpdate))
-
-        presenter.init.accept(Unit)
     }
 
     override fun onDestroy() {
