@@ -36,12 +36,15 @@ class CurrencyConverter @Inject constructor(freeApi: FreeApi) {
             }
             .doOnNext { refreshing.accept(false) }
             .share()
-    val currencies: Observable<List<Currency>> = Observable.merge(init, refresh).concatMap { _ ->
-        freeApi.currencies()
-                .map { it.results.keys.sorted().map(Currency::getInstance) }
-                .doOnError { refreshing.accept(false) }
-                .onErrorResumeNext(Observable.empty())
-    }
+    val currencies: Observable<List<Currency>> = Observable.merge(init, refresh)
+            .concatMap { _ ->
+                freeApi.currencies()
+                        .map { it.results.keys.sorted().map(Currency::getInstance) }
+                        .doOnError { refreshing.accept(false) }
+                        .onErrorResumeNext(Observable.empty())
+            }
+            .doOnNext { refreshing.accept(false) }
+            .share()
     private val fromAmountChange = Observable.merge(fromAmountSet, fromAmountUpdate)
     private val toAmountChange = Observable.merge(toAmountSet, toAmountUpdate)
     val fromAmount: Observable<BigDecimal> = fromAmountChange
