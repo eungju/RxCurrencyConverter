@@ -18,30 +18,28 @@ class CurrencyConverterActivity : AppCompatActivity() {
 
         CurrencyApplication.get(this).component().inject(this)
 
-        subscriptions = CompositeDisposable()
-        //output
-        subscriptions.add(presenter.refreshing
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(RxSwipeRefreshLayout.refreshing(refresh)))
-        subscriptions.add(presenter.currencies
-                .subscribe {
-                    from.setCurrencies(it)
-                    to.setCurrencies(it)
-                })
-        subscriptions.add(presenter.fromCurrency
-                .subscribe { from.setCurrency(it) })
-        subscriptions.add(presenter.fromAmount
-                .subscribe { from.setAmount(it) })
-        subscriptions.add(presenter.toCurrency
-                .subscribe { to.setCurrency(it) })
-        subscriptions.add(presenter.toAmount
-                .subscribe { to.setAmount(it) })
-        //input
-        subscriptions.add(RxSwipeRefreshLayout.refreshes(refresh).map { Unit }.subscribe(presenter.refresh))
-        subscriptions.add(from.currencyUpdate().subscribe(presenter.fromCurrencyUpdate))
-        subscriptions.add(from.amountUpdate().subscribe(presenter.fromAmountUpdate))
-        subscriptions.add(to.currencyUpdate().subscribe(presenter.toCurrencyUpdate))
-        subscriptions.add(to.amountUpdate().subscribe(presenter.toAmountUpdate))
+        subscriptions = CompositeDisposable(
+                //output
+                presenter.refreshing
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(RxSwipeRefreshLayout.refreshing(refresh)),
+                presenter.currencies
+                        .subscribe {
+                            from.setCurrencies(it)
+                            to.setCurrencies(it)
+                        },
+                presenter.fromCurrency.subscribe { from.setCurrency(it) },
+                presenter.fromAmount.subscribe { from.setAmount(it) },
+                presenter.toCurrency.subscribe { to.setCurrency(it) },
+                presenter.toAmount.subscribe { to.setAmount(it) },
+                //input
+                RxSwipeRefreshLayout.refreshes(refresh).map { Unit }.subscribe(presenter.refresh),
+                from.currencyUpdate().subscribe(presenter.fromCurrencyUpdate),
+                from.amountUpdate().subscribe(presenter.fromAmountUpdate),
+                to.currencyUpdate().subscribe(presenter.toCurrencyUpdate),
+                to.amountUpdate().subscribe(presenter.toAmountUpdate)
+
+        )
     }
 
     override fun onDestroy() {
