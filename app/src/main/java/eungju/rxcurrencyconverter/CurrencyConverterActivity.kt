@@ -24,9 +24,6 @@ class CurrencyConverterActivity : AppCompatActivity() {
         subscriptions.add(presenter.refreshing
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(RxSwipeRefreshLayout.refreshing(refresh)))
-        subscriptions.add(presenter.date
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(RxTextView.text(this.date)))
         subscriptions.add(presenter.currencies
                 .subscribe {
                     from.setCurrencies(it)
@@ -46,6 +43,8 @@ class CurrencyConverterActivity : AppCompatActivity() {
         subscriptions.add(from.amountUpdate().subscribe(presenter.fromAmountUpdate))
         subscriptions.add(to.currencyUpdate().subscribe(presenter.toCurrencyUpdate))
         subscriptions.add(to.amountUpdate().subscribe(presenter.toAmountUpdate))
+
+        presenter.init.accept(Unit)
     }
 
     override fun onDestroy() {
