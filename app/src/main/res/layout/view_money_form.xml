@@ -28,7 +28,7 @@
 
     </LinearLayout>
 
-    <android.support.v7.widget.GridLayout
+    <androidx.gridlayout.widget.GridLayout
         android:id="@+id/keys"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -119,6 +119,6 @@
             android:tag="clear"
             android:text="AC" />
 
-    </android.support.v7.widget.GridLayout>
+    </androidx.gridlayout.widget.GridLayout>
 
 </LinearLayout>

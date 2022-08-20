@@ -18,16 +18,17 @@ class MoneyForm {
             .mergeWith(Observable.combineLatest(currencySelect, currencies, BiFunction { select, currencies -> currencies[select] }))
             .cacheWithInitialCapacity(1)
     val currencySetIndex: Observable<Int> = Observable.combineLatest<Currency, List<Currency>, Int>(currencySet, currencies, BiFunction { currency, currencies ->
-                currencies.indexOf(currency)
-            })
+        currencies.indexOf(currency)
+    })
             .cacheWithInitialCapacity(1)
-    val amount: Observable<BigDecimal> = amountSet.map { amount -> { current: BigDecimal -> amount } }
-            .mergeWith(keyPress.map { keyPress ->
-                when (keyPress) {
-                    "delete" -> { current: BigDecimal -> current.divideToIntegralValue(BigDecimal.TEN) }
-                    "clear" -> { current: BigDecimal -> BigDecimal.ZERO }
-                    else -> { current: BigDecimal ->
-                        current
+    val amount: Observable<BigDecimal>
+            = Observable.merge(amountSet.map { amount -> { _: BigDecimal -> amount } },
+            keyPress.map { keyPress ->
+                { current: BigDecimal ->
+                    when (keyPress) {
+                        "delete" -> current.divideToIntegralValue(BigDecimal.TEN)
+                        "clear" -> BigDecimal.ZERO
+                        else -> current
                                 .divideToIntegralValue(BigDecimal.ONE)
                                 .multiply(BigDecimal.TEN)
                                 .plus(BigDecimal(Integer.parseInt(keyPress).toDouble()))
