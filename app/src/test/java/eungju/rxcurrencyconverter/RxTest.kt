@@ -2,7 +2,7 @@ package eungju.rxcurrencyconverter
 
 import io.reactivex.Observable
 import io.reactivex.observers.TestObserver
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class RxTest {
     @Test

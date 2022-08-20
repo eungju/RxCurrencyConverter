@@ -18,12 +18,12 @@ import javax.inject.Singleton
 class ApplicationModule(private val app: CurrencyApplication) {
     @Provides
     @Singleton
-    fun fixer(retrofit: Retrofit): Fixer = retrofit.create(Fixer::class.java)
+    fun freeApi(retrofit: Retrofit): FreeApi = retrofit.create(FreeApi::class.java)
 
     @Singleton
     @Provides
     fun retrofit(httpClient: OkHttpClient, gson: Gson): Retrofit = Retrofit.Builder()
-            .baseUrl(HttpUrl.parse("http://api.fixer.io/"))
+            .baseUrl(HttpUrl.parse("https://free.currencyconverterapi.com/api/v6/"))
             .client(httpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.io()))
